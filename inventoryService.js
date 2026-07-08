@@ -13,6 +13,24 @@ const inventoryService = {
     const [rows] = await db.execute('SELECT * FROM products');
     return rows;
   },
+  // NEW FEATURE: Fetch ONLY products that are at or below their low-stock threshold
+  async getLowStockReport() {
+    try {
+      const query = `
+        SELECT 
+          id AS 'ID', 
+          name AS 'Product Name', 
+          sku AS 'Item Code', 
+          quantity AS 'In Stock', 
+          threshold AS 'Min Level' 
+        FROM products
+        WHERE quantity <= threshold`;
+      const [rows] = await db.execute(query);
+      return rows;
+    } catch (err) {
+      console.error("\n❌ Database Error fetching low stock report:", err.message);
+    }
+  },
 
   // UPDATE & ALERT: Logic to check if we are running low
   async adjustQuantity(sku, amount) {
@@ -57,7 +75,7 @@ const inventoryService = {
     console.error("\n❌ Database Error:", err.message);
    }
   },
-  async getAllStock() {
+  
    // We use "AS" to rename the columns just for the display
    const query = `
     SELECT 
