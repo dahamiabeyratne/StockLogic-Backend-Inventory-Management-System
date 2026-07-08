@@ -13,6 +13,24 @@ const inventoryService = {
     const [rows] = await db.execute('SELECT * FROM products');
     return rows;
   },
+  // NEW FEATURE: Fetch ONLY products that are at or below their low-stock threshold
+  async getLowStockReport() {
+    try {
+      const query = `
+        SELECT 
+          id AS 'ID', 
+          name AS 'Product Name', 
+          sku AS 'Item Code', 
+          quantity AS 'In Stock', 
+          threshold AS 'Min Level' 
+        FROM products
+        WHERE quantity <= threshold`;
+      const [rows] = await db.execute(query);
+      return rows;
+    } catch (err) {
+      console.error("\n❌ Database Error fetching low stock report:", err.message);
+    }
+  },
 
   // UPDATE & ALERT: Logic to check if we are running low
   async adjustQuantity(sku, amount) {
@@ -43,35 +61,19 @@ const inventoryService = {
   },
 
   async updateItem(sku, field, newValue) {
-   try {
-    // We use a template string for the field name, but '?' for the value to stay safe
-    const query = `UPDATE products SET ${field} = ? WHERE sku = ?`;
-    const [result] = await db.execute(query, [newValue, sku]);
+    try {
+      const query = `UPDATE products SET ${field} = ? WHERE sku = ?`;
+      const [result] = await db.execute(query, [newValue, sku]);
 
-    if (result.affectedRows > 0) {
-      console.log(`\n✅ Successfully updated ${field} for item ${sku}!`);
-    } else {
-      console.log("\n❌ Error: Item not found.");
-    }  
-   } catch (err) {
-    console.error("\n❌ Database Error:", err.message);
-   }
-  },
-  async getAllStock() {
-   // We use "AS" to rename the columns just for the display
-   const query = `
-    SELECT 
-      id AS 'ID', 
-      name AS 'Product Name', 
-      sku AS 'Item Code', 
-      quantity AS 'In Stock', 
-      threshold AS 'Min Level' 
-    FROM products`;
-    
-   const [rows] = await db.execute(query);
-   return rows;
+      if (result.affectedRows > 0) {
+        console.log(`\n✅ Successfully updated ${field} for item ${sku}!`);
+      } else {
+        console.log("\n❌ Error: Item not found.");
+      }  
+    } catch (err) {
+      console.error("\n❌ Database Error:", err.message);
+    }
   }
-
 };
 
 module.exports = inventoryService;
