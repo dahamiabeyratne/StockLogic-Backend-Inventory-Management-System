@@ -6,18 +6,17 @@ const readline = require('readline').createInterface({
 
 /**
  * HELPER FUNCTION: ask()
- * This wraps the old readline in a Promise so we can use 'await'.
- * It makes the code wait for the user to type before moving to the next line.
+ * Wraps readline interface in a Promise to allow async/await usage.
  */
 const ask = (query) => new Promise((resolve) => readline.question(query, resolve));
 
 async function main() {
   console.log("\n==============================");
-  console.log("  STOCKLOGIC: INVENTORY SYSTEM");
-  console.log("==============================");33
+  console.log("   STOCKLOGIC: INVENTORY SYSTEM");
+  console.log("=============================="); // Fixed: Removed the stray '33'
   console.log("1. Add Item");
   console.log("2. View Stock Report");
-  console.log("3. View Low Stock Alerts ⭐ (NEW)");
+  console.log("3. View Low Stock Alerts ⭐");
   console.log("4. Update Item Details");
   console.log("5. Delete Item");
   console.log("6. Exit");
@@ -26,40 +25,46 @@ async function main() {
   const choice = await ask('Choose an option: ');
 
   switch (choice) {
-    case '1':
+   case '1':
       console.log("\n--- Add New Product ---");
       const name = await ask('Product Name: ');
       const sku = await ask('Unique Item Code: ');
       const qty = await ask('Initial Quantity: ');
+      const price = await ask('Unit Price: '); // 🌟 New Prompt
       const threshold = await ask('Low-Stock Alert Level: ');
       
-      // We use parseInt because terminal input is text; the DB needs numbers.
-      await inventory.addItem(name, sku, parseInt(qty), parseInt(threshold));
-      return main(); // This loops back to the start
+      // We use parseFloat for price to handle decimals (e.g., 10.99)
+      await inventory.addItem(name, sku, parseInt(qty), parseFloat(price), parseInt(threshold));
+      return main();
 
     case '2':
       console.log("\n--- Current Inventory Report ---");
       const data = await inventory.getAllStock();
-      console.table(data);
-      return main(); // Returns to menu after showing table
+      
+      if (!data || data.length === 0) {
+        console.log("ℹ️ No items found in inventory. Try adding one first!");
+      } else {
+        console.table(data);
+      }
+      return main(); 
 
-      case '3': // --- HANDLING THE NEW FEATURE ---
+    case '3': 
       console.log("\n--- ⚠️ Low Stock Warning Report ⚠️ ---");
       const lowStockData = await inventory.getLowStockReport();
-      if (lowStockData.length === 0) {
+      
+      if (!lowStockData || lowStockData.length === 0) {
         console.log("✅ All items are comfortably above their minimum thresholds.");
       } else {
         console.table(lowStockData);
       }
       return main();
 
-
     case '4':
       console.log("\n--- Update Item Details ---");
       const Usku = await ask('Enter the SKU of the item to update: ');
       
       console.log("What would you like to change?");
-      console.log("1. Name | 2. Quantity | 3. Low-Stock Limit | 4. SKU ");
+      console.log("1. Name | 2. Quantity | 3. Price | 4. Low-Stock Limit | 5. SKU "); // 🌟 Updated Options
       const updateChoice = await ask('Selection: ');
 
       let field, newValue;
@@ -71,14 +76,17 @@ async function main() {
         field = 'quantity';
         const val = await ask('Enter new Quantity total: ');
         newValue = parseInt(val);
-      } else if (updateChoice === '3') {
+      } else if (updateChoice === '3') { // 🌟 Added Price choice
+        field = 'price';
+        const val = await ask('Enter new Price: ');
+        newValue = parseFloat(val);
+      } else if (updateChoice === '4') {
         field = 'threshold';
         const val = await ask('Enter new Threshold: ');
         newValue = parseInt(val);
-       } else if (updateChoice === '4') {
+      } else if (updateChoice === '5') {
         field = 'sku';
         newValue = await ask('Enter new SKU: ');
- 
       } else {
         console.log("Invalid selection.");
         return main();
@@ -87,8 +95,7 @@ async function main() {
       await inventory.updateItem(Usku, field, newValue);
       return main();
 
-
-    case '5': // --- NEW DELETE OPTION ---
+    case '5': 
       console.log("\n--- Delete Item Permanently ---");
       const skuToDelete = await ask('Enter the SKU of the item to delete: ');
       const confirm = await ask(`Are you sure you want to delete ${skuToDelete}? (yes/no): `);
@@ -101,24 +108,22 @@ async function main() {
       return main();
 
     case '6':
-      console.log("Shutting down StockLogic. nGoodbye!");
+      console.log("Shutting down StockLogic. \nGoodbye!");
       readline.close();
       process.exit(0);
       break;
 
     default:
-      console.log("❌ Invalid option. Please pick 1-4.");
+      console.log("❌ Invalid option. Please pick 1-6."); // Fixed: Updated numbers to match menu
       return main();
   }
 }
 
-// At the bottom of app.js
+// Global initialization setup
 const hour = new Date().getHours();
 let greeting = hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
 
 console.log(`\n${greeting}! Welcome to StockLogic.`);
 
- // Start the loop
-
-// Start the application
+// Run application core loop
 main();

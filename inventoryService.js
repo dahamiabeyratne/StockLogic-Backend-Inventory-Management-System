@@ -2,17 +2,33 @@ const db = require('./config');
 
 const inventoryService = {
   // CREATE: Why this way? Using '?' prevents SQL Injection (security)
-  async addItem(name, sku, quantity, lowStockThreshold) {
-    const query = 'INSERT INTO products (name, sku, quantity, threshold) VALUES (?, ?, ?, ?)';
-    await db.execute(query, [name, sku, quantity, lowStockThreshold]);
+ // CREATE
+  async addItem(name, sku, quantity, price, lowStockThreshold) {
+    const query = 'INSERT INTO products (name, sku, quantity, price, threshold) VALUES (?, ?, ?, ?, ?)';
+    await db.execute(query, [name, sku, quantity, price, lowStockThreshold]);
     console.log(`Product ${name} added successfully.`);
   },
 
   // READ: Fetches all items to generate your "Stock Report"
+ // READ
   async getAllStock() {
-    const [rows] = await db.execute('SELECT * FROM products');
-    return rows;
+    try {
+      const query = `
+        SELECT 
+          id AS 'ID', 
+          name AS 'Product Name', 
+          sku AS 'Item Code', 
+          quantity AS 'In Stock', 
+          price AS 'Price ($)',
+          threshold AS 'Min Level' 
+        FROM products`;
+      const [rows] = await db.execute(query);
+      return rows;
+    } catch (err) {
+      console.error("\n❌ Database Error fetching stock:", err.message);
+    }
   },
+  // NEW FEATURE: Fetch ONLY products that are at or below their low-stock threshold
   // NEW FEATURE: Fetch ONLY products that are at or below their low-stock threshold
   async getLowStockReport() {
     try {
@@ -22,6 +38,7 @@ const inventoryService = {
           name AS 'Product Name', 
           sku AS 'Item Code', 
           quantity AS 'In Stock', 
+          price AS 'Price ($)',
           threshold AS 'Min Level' 
         FROM products
         WHERE quantity <= threshold`;
