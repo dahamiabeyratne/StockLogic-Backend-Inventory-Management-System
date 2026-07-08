@@ -17,9 +17,10 @@ async function main() {
   console.log("==============================");33
   console.log("1. Add Item");
   console.log("2. View Stock Report");
-  console.log("3. Update Item Details");
-  console.log("4. Delete Item");
-  console.log("5. Exit");
+  console.log("3. View Low Stock Alerts ⭐ (NEW)");
+  console.log("4. Update Item Details");
+  console.log("5. Delete Item");
+  console.log("6. Exit");
   console.log("------------------------------");
   
   const choice = await ask('Choose an option: ');
@@ -42,8 +43,18 @@ async function main() {
       console.table(data);
       return main(); // Returns to menu after showing table
 
+      case '3': // --- HANDLING THE NEW FEATURE ---
+      console.log("\n--- ⚠️ Low Stock Warning Report ⚠️ ---");
+      const lowStockData = await inventory.getLowStockReport();
+      if (lowStockData.length === 0) {
+        console.log("✅ All items are comfortably above their minimum thresholds.");
+      } else {
+        console.table(lowStockData);
+      }
+      return main();
 
-    case '3':
+
+    case '4':
       console.log("\n--- Update Item Details ---");
       const Usku = await ask('Enter the SKU of the item to update: ');
       
@@ -77,7 +88,7 @@ async function main() {
       return main();
 
 
-    case '4': // --- NEW DELETE OPTION ---
+    case '5': // --- NEW DELETE OPTION ---
       console.log("\n--- Delete Item Permanently ---");
       const skuToDelete = await ask('Enter the SKU of the item to delete: ');
       const confirm = await ask(`Are you sure you want to delete ${skuToDelete}? (yes/no): `);
@@ -89,7 +100,7 @@ async function main() {
       }
       return main();
 
-    case '5':
+    case '6':
       console.log("Shutting down StockLogic. nGoodbye!");
       readline.close();
       process.exit(0);
